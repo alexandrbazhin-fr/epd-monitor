@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Монитор ЭПД — рабочая панель</title>
+<meta name="description" content="Ежедневный мониторинг изменений по электронным перевозочным документам: нормы, разъяснения ведомств, практика и рынок.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>/* ---------------------------------------------------------------- токены */
+:root, [data-theme="light"] {
+  --bg: #eef1f5;
+  --surface: #ffffff;
+  --surface-2: #f7f9fb;
+  --surface-3: #eceff4;
+  --border: #d9e0e8;
+  --divider: #e6ebf1;
+  --text: #121d28;
+  --muted: #5b6a79;
+  --faint: #8a98a6;
+  --accent: #0b4f8a;
+  --accent-soft: #e3edf7;
+  --accent-2: #c8891a;
+  --ok: #17703f;      --ok-soft: #e0f0e6;
+  --warn: #9a6100;    --warn-soft: #fbeed6;
+  --info: #1a5f9c;    --info-soft: #e2edf8;
+  --danger: #a32219;  --danger-soft: #fae4e1;
+  --neutral: #59636e; --neutral-soft: #e8ebef;
+  --shadow: 0 1px 2px rgba(17, 30, 43, .06), 0 6px 16px -10px rgba(17, 30, 43, .18);
+}
+[data-theme="dark"] {
+  --bg: #0b131c;
+  --surface: #141f2b;
+  --surface-2: #18242f;
+  --surface-3: #1e2c39;
+  --border: #2a3a4a;
+  --divider: #223140;
+  --text: #e7eef5;
+  --muted: #96a6b6;
+  --faint: #6f8092;
+  --accent: #5aa6e8;
+  --accent-soft: #17293b;
+  --accent-2: #e8b451;
+  --ok: #5ad598;      --ok-soft: #14301f;
+  --warn: #f0b429;    --warn-soft: #33270c;
+  --info: #7cb8ee;    --info-soft: #16293c;
+  --danger: #ff8579;  --danger-soft: #3a1a18;
+  --neutral: #9fadba; --neutral-soft: #22303d;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 20px -12px rgba(0, 0, 0, .6);
+}
+:root {
+  --s1: .25rem; --s2: .5rem; --s3: .75rem; --s4: 1rem; --s5: 1.25rem;
+  --s6: 1.5rem; --s8: 2rem; --s10: 2.5rem; --s12: 3rem;
+  --t-xs: clamp(.75rem, .72rem + .12vw, .8125rem);
+  --t-sm: clamp(.875rem, .85rem + .12vw, .9375rem);
+  --t-base: clamp(1rem, .97rem + .14vw, 1.0625rem);
+  --t-lg: clamp(1.125rem, 1.05rem + .35vw, 1.375rem);
+  --t-xl: clamp(1.375rem, 1.2rem + .8vw, 1.875rem);
+  --r: 10px; --r-sm: 7px;
+  --sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font: var(--t-base)/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+h1, h2, h3, h4 { margin: 0; line-height: 1.25; font-weight: 650; letter-spacing: -.01em; }
+a { color: var(--accent); text-decoration-color: color-mix(in oklab, var(--accent) 35%, transparent); text-underline-offset: 2px; }
+a:hover { text-decoration-color: var(--accent); }
+code { font: 90%/1.4 var(--mono); background: var(--surface-3); padding: .1em .35em; border-radius: 4px; }
+.muted { color: var(--muted); }
+.small { font-size: var(--t-xs); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* ---------------------------------------------------------------- каркас */
+.app { display: grid; grid-template-columns: 250px 1fr; grid-template-rows: auto 1fr; height: 100dvh; }
+.sidebar {
+  grid-row: 1 / -1; background: var(--surface); border-right: 1px solid var(--border);
+  padding: var(--s5) var(--s4); display: flex; flex-direction: column; gap: var(--s6);
+  overflow-y: auto; overscroll-behavior: contain;
+}
+.brand { display: flex; align-items: center; gap: var(--s3); color: var(--accent); text-decoration: none; }
+.logo { width: 32px; height: 32px; flex: none; }
+.brand-t { display: flex; flex-direction: column; line-height: 1.2; }
+.brand-t b { color: var(--text); font-size: var(--t-sm); letter-spacing: -.01em; }
+.brand-t i { color: var(--faint); font-size: var(--t-xs); font-style: normal; }
+
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav a {
+  display: flex; justify-content: space-between; align-items: center; gap: var(--s2);
+  padding: var(--s2) var(--s3); border-radius: var(--r-sm);
+  color: var(--muted); text-decoration: none; font-size: var(--t-sm); font-weight: 500;
+}
+.nav a:hover { background: var(--surface-3); color: var(--text); }
+.nav a.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.nav .n { font-size: var(--t-xs); color: var(--faint); font-variant-numeric: tabular-nums; }
+.nav a.on .n { color: var(--accent); }
+
+.side-foot { margin-top: auto; display: flex; flex-direction: column; gap: var(--s4); }
+.side-role label { display: block; font-size: var(--t-xs); color: var(--faint); margin-bottom: var(--s1); text-transform: uppercase; letter-spacing: .05em; }
+.side-note { margin: 0; font-size: var(--t-xs); color: var(--faint); line-height: 1.45; }
+
+.header {
+  grid-column: 2; position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s4);
+  padding: var(--s4) var(--s6); background: color-mix(in oklab, var(--surface) 88%, transparent);
+  backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+}
+.h-left { display: flex; align-items: baseline; gap: var(--s3); flex-wrap: wrap; min-width: 0; }
+.h-left h1 { font-size: var(--t-xl); }
+.asof {
+  font-size: var(--t-xs); color: var(--accent); background: var(--accent-soft);
+  padding: 3px var(--s2); border-radius: 100px; font-variant-numeric: tabular-nums;
+}
+.h-right { display: flex; gap: var(--s2); }
+.main { grid-column: 2; overflow-y: auto; overscroll-behavior: contain; padding: var(--s6) var(--s6) var(--s12); scroll-behavior: smooth; }
+
+/* ---------------------------------------------------------------- элементы */
+.btn {
+  font: 500 var(--t-sm)/1 var(--sans); color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--r-sm); padding: var(--s2) var(--s3);
+  cursor: pointer; transition: background .15s, border-color .15s;
+}
+.btn:hover { background: var(--surface-3); border-color: var(--faint); }
+.btn.icon { display: grid; place-items: center; width: 34px; height: 32px; padding: 0; color: var(--muted); }
+.btn.ghost { background: transparent; }
+select, input[type="search"] {
+  width: 100%; font: var(--t-sm)/1.3 var(--sans); color: var(--text);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: var(--s2) var(--s3); min-height: 34px;
+}
+.sec { min-width: 0; max-width: 1180px; margin: 0 auto var(--s12); scroll-margin-top: var(--s8); }
+.sec-h { display: flex; align-items: baseline; gap: var(--s4); flex-wrap: wrap; margin-bottom: var(--s4); }
+.sec-h h2, .panel-h h2 { font-size: var(--t-lg); }
+.sec-h p { margin: 0; font-size: var(--t-sm); }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); padding: var(--s5); }
+.panel + .panel { margin-top: var(--s5); }
+.panel-h { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s4); margin-bottom: var(--s4); flex-wrap: wrap; }
+.panel-h .muted { font-size: var(--t-xs); font-variant-numeric: tabular-nums; }
+
+/* KPI */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); gap: var(--s3); margin-bottom: var(--s5); }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: var(--s4); box-shadow: var(--shadow); }
+.kpi b { display: block; font-size: 1.85rem; line-height: 1.05; font-weight: 640; font-variant-numeric: tabular-nums lining-nums; letter-spacing: -.02em; }
+.kpi span { display: block; margin-top: var(--s1); font-size: var(--t-xs); color: var(--muted); }
+.kpi.alert b { color: var(--danger); }
+.kpi.warn b { color: var(--warn); }
+.kpi.ok b { color: var(--ok); }
+
+/* таймлайн */
+.timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
+.timeline li { display: grid; grid-template-columns: 96px 12px 1fr; align-items: start; gap: var(--s3); }
+.timeline .d { font-size: var(--t-xs); color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 3px; }
+.timeline .dot { width: 11px; height: 11px; border-radius: 50%; margin-top: 6px; background: var(--neutral-soft); border: 2px solid var(--neutral); }
+.timeline li.past .dot { background: var(--ok); border-color: var(--ok); }
+.timeline li.next .dot { background: var(--warn); border-color: var(--warn); box-shadow: 0 0 0 4px var(--warn-soft); }
+.timeline .t { font-weight: 600; font-size: var(--t-sm); }
+.timeline .n { font-size: var(--t-xs); color: var(--muted); }
+
+/* фильтры */
+.filters {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--s3);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+  padding: var(--s4); margin-bottom: var(--s4);
+}
+.f-search { grid-column: span 2; min-width: 220px; }
+.f label { display: block; font-size: var(--t-xs); color: var(--faint); margin-bottom: var(--s1); text-transform: uppercase; letter-spacing: .05em; }
+.f-reset { display: flex; align-items: flex-end; }
+.count { margin: 0 0 var(--s3); font-size: var(--t-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* карточки сигналов */
+.cards { display: grid; gap: var(--s3); }
+.cards > * { content-visibility: auto; contain-intrinsic-size: 0 190px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--neutral); border-radius: var(--r); padding: var(--s4) var(--s5); box-shadow: var(--shadow); }
+.card.lv-1, .card.lv-2 { border-left-color: var(--accent); }
+.card.lv-3 { border-left-color: var(--info); }
+.card.lv-4, .card.lv-5 { border-left-color: var(--neutral); }
+.card.low { border-left-style: dashed; }
+.card h3 { font-size: var(--t-base); margin-bottom: var(--s2); }
+.card h3 a { color: var(--text); text-decoration: none; }
+.card h3 a:hover { color: var(--accent); text-decoration: underline; }
+.card p { margin: 0 0 var(--s3); font-size: var(--t-sm); color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+.row + .row { margin-top: var(--s2); }
+.meta { font-size: var(--t-xs); color: var(--faint); font-variant-numeric: tabular-nums; }
+.meta b { color: var(--muted); font-weight: 600; }
+
+.tag {
+  display: inline-flex; align-items: center; gap: 5px; font-size: var(--t-xs); font-weight: 600;
+  padding: 3px var(--s2); border-radius: 100px; background: var(--neutral-soft); color: var(--neutral);
+  white-space: nowrap;
+}
+.tag.ok { background: var(--ok-soft); color: var(--ok); }
+.tag.warn { background: var(--warn-soft); color: var(--warn); }
+.tag.info { background: var(--info-soft); color: var(--info); }
+.tag.danger { background: var(--danger-soft); color: var(--danger); }
+.tag.plain { background: transparent; border: 1px solid var(--border); color: var(--muted); font-weight: 500; }
+.tag .dotm { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+
+/* таблицы */
+.tw { overflow-x: auto; overscroll-behavior-x: contain; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); }
+.tbl, .note-body table { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
+.tbl th, .tbl td, .note-body th, .note-body td { padding: var(--s2) var(--s3); text-align: left; border-bottom: 1px solid var(--divider); vertical-align: top; }
+.tbl thead th, .note-body thead th { font-size: var(--t-xs); text-transform: uppercase; letter-spacing: .04em; color: var(--faint); background: var(--surface-2); white-space: nowrap; }
+.sticky thead th { position: sticky; top: 0; z-index: 1; }
+.tbl th[data-k] { cursor: pointer; user-select: none; }
+.tbl th[data-k]:hover { color: var(--accent); }
+.tbl th.sorted::after { content: " ↑"; color: var(--accent); }
+.tbl th.sorted.desc::after { content: " ↓"; }
+.tbl tbody tr:hover { background: var(--surface-2); }
+.tbl td:first-child, .tbl td:nth-child(2) { white-space: nowrap; }
+.num { font-variant-numeric: tabular-nums lining-nums; }
+
+/* расхождения */
+.flags { display: grid; gap: var(--s3); }
+.flag { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--warn); border-radius: var(--r); padding: var(--s4) var(--s5); box-shadow: var(--shadow); }
+.flag.high { border-left-color: var(--danger); }
+.flag.done { border-left-color: var(--ok); opacity: .72; }
+.flag h3 { font-size: var(--t-sm); font-family: var(--mono); font-weight: 600; }
+.flag p { margin: var(--s2) 0 var(--s3); font-size: var(--t-sm); color: var(--muted); }
+.chk { display: inline-flex; gap: var(--s2); align-items: center; font-size: var(--t-sm); color: var(--muted); cursor: pointer; }
+
+/* архив */
+.arch { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: var(--s4); align-items: start; }
+.arch-list { display: flex; flex-direction: column; gap: 2px; }
+.arch-list button {
+  text-align: left; font: 500 var(--t-sm)/1.3 var(--sans); color: var(--muted);
+  background: transparent; border: 1px solid transparent; border-radius: var(--r-sm);
+  padding: var(--s2) var(--s3); cursor: pointer;
+}
+.arch-list button:hover { background: var(--surface-3); color: var(--text); }
+.arch-list button.on { background: var(--surface); border-color: var(--border); color: var(--accent); font-weight: 600; box-shadow: var(--shadow); }
+.arch-list button i { display: block; font-style: normal; font-size: var(--t-xs); color: var(--faint); font-variant-numeric: tabular-nums; }
+
+/* тело заметки */
+.note-body { font-size: var(--t-sm); }
+.note-body h2 { font-size: var(--t-base); margin: var(--s5) 0 var(--s2); padding-bottom: var(--s1); border-bottom: 1px solid var(--divider); }
+.note-body h3, .note-body h4 { font-size: var(--t-sm); margin: var(--s4) 0 var(--s1); }
+.note-body h2:first-child, .note-body h3:first-child { margin-top: 0; }
+.note-body p, .note-body li { color: var(--muted); }
+.note-body p { margin: 0 0 var(--s3); }
+.note-body ul, .note-body ol { margin: 0 0 var(--s3); padding-left: var(--s5); }
+.note-body li { margin-bottom: var(--s1); }
+.note-body .tw { margin-bottom: var(--s4); box-shadow: none; }
+.prose p { margin: 0 0 var(--s3); font-size: var(--t-sm); color: var(--muted); }
+.prose p:last-child { margin-bottom: 0; }
+.prose .warn { color: var(--text); background: var(--warn-soft); border-left: 3px solid var(--warn); padding: var(--s3) var(--s4); border-radius: var(--r-sm); }
+
+.empty { text-align: center; padding: var(--s10) var(--s4); border: 1px dashed var(--border); border-radius: var(--r); color: var(--muted); }
+.empty b { display: block; margin-bottom: var(--s1); color: var(--text); font-size: var(--t-sm); }
+.empty span { font-size: var(--t-sm); }
+.foot { display: flex; gap: var(--s4); justify-content: space-between; flex-wrap: wrap; margin-top: var(--s5); padding-top: var(--s4); border-top: 1px solid var(--border); font-size: var(--t-xs); color: var(--faint); }
+
+/* ---------------------------------------------------------------- адаптив */
+@media (max-width: 1020px) {
+  body { overflow: auto; }
+  .app { grid-template-columns: minmax(0, 1fr); height: auto; min-height: 100dvh; }
+  .sidebar { grid-row: auto; min-width: 0; border-right: 0; border-bottom: 1px solid var(--border); overflow: visible; }
+  .nav { flex-direction: row; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: var(--s1); }
+  .nav a { white-space: nowrap; }
+  .side-foot { margin-top: 0; }
+  .header, .main { grid-column: 1; min-width: 0; }
+  .main { overflow: visible; padding: var(--s5) var(--s4) var(--s10); }
+  .arch { grid-template-columns: minmax(0, 1fr); }
+  .arch-list { flex-direction: row; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; }
+  .arch-list button { white-space: nowrap; }
+}
+@media (max-width: 620px) {
+  .header { padding: var(--s3) var(--s4); flex-wrap: wrap; }
+  .h-left h1 { font-size: var(--t-lg); }
+  .asof { white-space: nowrap; }
+  .kpi b { font-size: 1.6rem; }
+  .f-search { grid-column: span 1; }
+  .timeline li { grid-template-columns: 78px 12px 1fr; }
+}
+@media print {
+  .sidebar, .h-right, .filters, .arch-list, .nav { display: none; }
+  body, .main { overflow: visible; }
+  .app { grid-template-columns: minmax(0, 1fr); height: auto; }
+  .panel, .card, .tw, .flag { box-shadow: none; break-inside: avoid; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+
+/* ---------------------------------------------------------------- загрузка */
+.kpi.sk, .panel .skb { --sk-a: var(--surface-3); }
+.skb { display: block; height: 14px; border-radius: 5px; background: var(--surface-3); margin-bottom: var(--s3); animation: pulse 1.4s ease-in-out infinite; }
+.kpi.sk .skb:first-child { height: 30px; margin-bottom: var(--s2); }
+.w-30 { width: 30%; } .w-40 { width: 40%; } .w-70 { width: 70%; } .w-80 { width: 80%; } .w-90 { width: 90%; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .skb { animation: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <a class="brand" href="#obzor">
+      <svg class="logo" viewBox="0 0 32 32" aria-label="Монитор ЭПД" role="img">
+        <rect width="32" height="32" rx="7" fill="currentColor" opacity=".1"/>
+        <path d="M8 21V11h6.5a3.5 3.5 0 0 1 0 7H8" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="square"/>
+        <circle cx="22.5" cy="21" r="2.6" fill="var(--accent-2)"/>
+      </svg>
+      <span class="brand-t"><b>Монитор ЭПД</b><i>рабочая панель</i></span>
+    </a>
+
+    <nav class="nav" id="nav">
+      <a href="#obzor" class="on">Обзор</a>
+      <a href="#signaly">Сигналы <span class="n" id="navSignals"></span></a>
+      <a href="#normy">Нормы <span class="n" id="navNorms"></span></a>
+      <a href="#rashozhdeniya">Расхождения <span class="n" id="navFlags"></span></a>
+      <a href="#arhiv">Архив выпусков <span class="n" id="navNotes"></span></a>
+      <a href="#istochniki">Как читать панель</a>
+    </nav>
+
+    <div class="side-foot">
+      <div class="side-role">
+        <label for="roleSel">Показывать для роли</label>
+        <select id="roleSel"></select>
+      </div>
+      <p class="side-note">Данные собираются из реестров монитора. Первоисточник — акт, а не строка панели.</p>
+    </div>
+  </aside>
+
+  <header class="header">
+    <div class="h-left">
+      <h1>Монитор ЭПД</h1>
+      <span class="asof" id="asof">загрузка данных…</span>
+    </div>
+    <div class="h-right">
+      <button class="btn" id="expMd" type="button" title="Выгрузить текущую выборку в Markdown">Markdown</button>
+      <button class="btn" id="expCsv" type="button" title="Выгрузить текущую выборку в CSV">CSV</button>
+      <button class="btn icon" id="theme" type="button" aria-label="Сменить тему">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9">
+          <circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4 17 7M7 17l-1.6 1.6"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="main" id="main">
+
+    <div id="loading" class="sec">
+      <div class="kpis">
+        <div class="kpi sk"><span class="skb w-40"></span><span class="skb w-80"></span></div>
+        <div class="kpi sk"><span class="skb w-40"></span><span class="skb w-80"></span></div>
+        <div class="kpi sk"><span class="skb w-40"></span><span class="skb w-80"></span></div>
+        <div class="kpi sk"><span class="skb w-40"></span><span class="skb w-80"></span></div>
+        <div class="kpi sk"><span class="skb w-40"></span><span class="skb w-80"></span></div>
+        <div class="kpi sk"><span class="skb w-40"></span><span class="skb w-80"></span></div>
+      </div>
+      <div class="panel"><span class="skb w-30"></span><span class="skb w-90"></span><span class="skb w-70"></span></div>
+    </div>
+
+    <div id="loadError" class="sec" hidden>
+      <div class="panel prose">
+        <h2>Данные не загрузились</h2>
+        <p>Страница не смогла прочитать файл <code>data.json</code>. Причина в сообщении ниже.</p>
+        <p class="warn" id="loadErrorMsg"></p>
+        <p>Если страница открыта двойным щелчком с диска, браузер блокирует чтение соседних файлов. Поднимите локальный сервер в папке со страницей: <code>python3 -m http.server 8000</code> и откройте <code>http://localhost:8000</code>. На хостинге такой проблемы нет: <code>index.html</code> и <code>data.json</code> должны лежать рядом.</p>
+      </div>
+    </div>
+
+    <div id="app" hidden>
+
+    <!-- ОБЗОР -->
+    <section id="obzor" class="sec">
+      <div class="kpis" id="kpis"></div>
+
+      <div class="panel">
+        <div class="panel-h">
+          <h2>Ключевые даты реформы</h2>
+          <span class="muted" id="timelineToday"></span>
+        </div>
+        <ol class="timeline" id="timeline"></ol>
+      </div>
+
+      <div class="panel" id="topBox">
+        <div class="panel-h"><h2>Главное в последнем выпуске</h2><span class="muted" id="topDate"></span></div>
+        <div class="note-body" id="topBody"></div>
+      </div>
+    </section>
+
+    <!-- СИГНАЛЫ -->
+    <section id="signaly" class="sec">
+      <div class="sec-h">
+        <h2>Сигналы</h2>
+        <p class="muted">Фильтры применяются и к выгрузке в Markdown и CSV.</p>
+      </div>
+
+      <div class="filters" id="filters">
+        <div class="f f-search">
+          <label for="q">Поиск по тексту</label>
+          <input type="search" id="q" placeholder="норма, документ, ведомство…" autocomplete="off">
+        </div>
+        <div class="f"><label for="fType">Тип изменения</label><select id="fType"></select></div>
+        <div class="f"><label for="fDoc">Документ</label><select id="fDoc"></select></div>
+        <div class="f"><label for="fConf">Достоверность</label><select id="fConf"></select></div>
+        <div class="f"><label for="fTier">Уровень источника</label><select id="fTier"></select></div>
+        <div class="f f-reset"><button class="btn ghost" id="reset" type="button">Сбросить</button></div>
+      </div>
+
+      <p class="count" id="count" role="status"></p>
+      <div class="cards" id="cards"></div>
+      <div class="empty" id="empty" hidden>
+        <b>Под фильтры ничего не попало.</b>
+        <span>Снимите часть условий или сбросьте фильтры.</span>
+      </div>
+    </section>
+
+    <!-- НОРМЫ -->
+    <section id="normy" class="sec">
+      <div class="sec-h">
+        <h2>Реестр норм</h2>
+        <p class="muted">Нажмите на заголовок столбца, чтобы отсортировать.</p>
+      </div>
+      <div class="tw sticky">
+        <table class="tbl" id="normsTbl">
+          <thead><tr>
+            <th data-k="type">Вид</th><th data-k="number">Реквизиты</th><th data-k="title">Название</th>
+            <th data-k="status">Статус</th><th data-k="effective_from">В силе с</th>
+            <th data-k="last_verified">Проверено</th><th>Источник</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="muted small" id="normsNote"></p>
+    </section>
+
+    <!-- РАСХОЖДЕНИЯ -->
+    <section id="rashozhdeniya" class="sec">
+      <div class="sec-h">
+        <h2>Расхождения с базой знаний</h2>
+        <label class="chk"><input type="checkbox" id="showClosed"> показывать закрытые</label>
+      </div>
+      <div class="flags" id="flags"></div>
+    </section>
+
+    <!-- АРХИВ -->
+    <section id="arhiv" class="sec">
+      <div class="sec-h"><h2>Архив выпусков</h2></div>
+      <div class="arch">
+        <div class="arch-list" id="archList" role="tablist" aria-label="Выпуски монитора"></div>
+        <article class="note-body panel" id="archBody"></article>
+      </div>
+    </section>
+
+    <!-- СПРАВКА -->
+    <section id="istochniki" class="sec">
+      <div class="sec-h"><h2>Как читать панель</h2></div>
+      <div class="panel prose">
+        <p><b>Уровень источника</b> — приоритет по регламенту проекта. Уровни 1–2 это акты и государственные системы, уровень 3 — профессиональное сообщество и разъяснения, уровень 4 — пресса и рынок, уровень 5 — вендор.</p>
+        <p><b>Достоверность</b> относится к сигналу, а не к норме. «Высокая» означает, что реквизиты подтверждены по официальной публикации. Сигналы с достоверностью «средняя» и «низкая» не подтверждены первоисточником и не могут быть единственным основанием юридически значимого вывода.</p>
+        <p><b>Расхождения</b> — противоречия между сигналом и страницей базы знаний проекта. Панель их фиксирует, но страницы правятся отдельно и вручную.</p>
+        <p class="warn">Панель — навигация по изменениям, а не правовая консультация. Перед решением по договорной схеме, налоговым или административным рискам проверьте актуальную редакцию нормативных актов и договор с юристом или профильным специалистом.</p>
+      </div>
+      <footer class="foot">
+        <span id="builtAt">Сборка данных</span>
+        <span>Ежедневный прогон 08:30 МСК, недельная ревизия по понедельникам 09:30 МСК</span>
+      </footer>
+    </section>
+
+    </div>
+  </main>
+</div>
+
+<script>window.renderMonitor = (D) => {
+  'use strict';
+  const L = D.labels;
+  const $ = (s) => document.querySelector(s);
+  const el = (t, c, h) => { const n = document.createElement(t); if (c) n.className = c; if (h != null) n.innerHTML = h; return n; };
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  const ru = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? `${m[3]}.${m[2]}.${m[1]}` : (iso || '—'); };
+  const lab = (g, v) => (L[g] && L[g][v]) || v || '—';
+
+  /* ------------------------------------------------------------- тема */
+  let theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  const setTheme = (t) => { theme = t; document.documentElement.dataset.theme = t; };
+  setTheme(theme);
+  $('#theme').addEventListener('click', () => setTheme(theme === 'dark' ? 'light' : 'dark'));
+
+  /* ------------------------------------------------------------- KPI */
+  const K = D.kpi;
+  const kpis = [
+    { v: K.fresh, t: `новых сигналов в выпуске ${ru(D.as_of)}`, c: K.fresh ? 'ok' : '' },
+    { v: K.signals, t: 'сигналов в реестре всего' },
+    { v: K.norms_in_force, t: 'норм действует' },
+    { v: K.norms_pending, t: 'принято, но не вступило в силу', c: K.norms_pending ? 'warn' : '' },
+    { v: K.flags_open, t: `открытых расхождений с базой знаний (из ${K.flags_total})`, c: K.flags_open ? 'alert' : 'ok' },
+    { v: K.unverified, t: 'сигналов без подтверждения первоисточником', c: K.unverified ? 'warn' : 'ok' },
+  ];
+  $('#kpis').append(...kpis.map((k) => el('div', 'kpi ' + (k.c || ''), `<b>${k.v}</b><span>${esc(k.t)}</span>`)));
+
+  /* ------------------------------------------------------------- таймлайн */
+  const today = D.today;
+  const tl = $('#timeline');
+  const upcoming = D.key_dates.filter((d) => d.date >= today).map((d) => d.date)[0];
+  D.key_dates.forEach((d) => {
+    const cls = d.date < today ? 'past' : (d.date === upcoming ? 'next' : '');
+    tl.append(el('li', cls, `<span class="d">${ru(d.date)}</span><span class="dot"></span>
+      <span><span class="t">${esc(d.title)}</span><br><span class="n">${esc(d.note)}</span></span>`));
+  });
+  $('#timelineToday').textContent = 'сегодня ' + ru(today);
+
+  /* ------------------------------------------------------------- последний выпуск */
+  const notes = D.notes.slice().sort((a, b) => (b.date + b.kind).localeCompare(a.date + a.kind));
+  const last = notes[0];
+  if (last) {
+    $('#topDate').textContent = (last.kind === 'weekly' ? 'недельный дайджест · ' : 'выпуск ') + ru(last.date);
+    const box = el('div');
+    box.innerHTML = last.html;
+    const main = [...box.children];
+    const start = main.findIndex((n) => /^H[2-4]$/.test(n.tagName) && /Главное/i.test(n.textContent));
+    let slice = main.slice(0, 4);
+    if (start >= 0) {
+      const level = main[start].tagName;
+      let end = main.length;
+      for (let i = start + 1; i < main.length; i++) { if (main[i].tagName === level) { end = i; break; } }
+      slice = main.slice(start + 1, end);
+    }
+    $('#topBody').append(...(slice.length ? slice : main.slice(0, 4)));
+  } else { $('#topBox').remove(); }
+
+  /* ------------------------------------------------------------- фильтры */
+  const uniq = (arr) => [...new Set(arr.filter(Boolean))].sort();
+  const fill = (sel, values, group, allLabel) => {
+    sel.append(el('option', '', esc(allLabel)));
+    sel.lastChild.value = '';
+    values.forEach((v) => { const o = el('option', '', esc(group ? lab(group, v) : v)); o.value = v; sel.append(o); });
+  };
+  fill($('#fType'), uniq(D.signals.map((s) => s.change_type)), 'change_type', 'все типы');
+  fill($('#fDoc'), uniq(D.signals.flatMap((s) => s.documents_list)), null, 'все документы');
+  fill($('#fConf'), ['high', 'medium', 'low'].filter((c) => D.signals.some((s) => s.confidence === c)), 'confidence', 'любая');
+  fill($('#fTier'), uniq(D.signals.map((s) => s.tier)), 'tier', 'все уровни');
+  fill($('#roleSel'), uniq(D.signals.flatMap((s) => s.roles_list).filter((r) => r !== 'все')), null, 'все роли');
+
+  const state = { q: '', type: '', doc: '', conf: '', tier: '', role: '' };
+  const bind = (sel, key) => $(sel).addEventListener('input', (e) => { state[key] = e.target.value.trim(); render(); });
+  bind('#q', 'q'); bind('#fType', 'type'); bind('#fDoc', 'doc');
+  bind('#fConf', 'conf'); bind('#fTier', 'tier'); bind('#roleSel', 'role');
+  $('#reset').addEventListener('click', () => {
+    Object.keys(state).forEach((k) => (state[k] = ''));
+    ['#q', '#fType', '#fDoc', '#fConf', '#fTier', '#roleSel'].forEach((s) => ($(s).value = ''));
+    render();
+  });
+
+  const haystack = (s) => [s.id, s.title, s.summary, s.source, s.norm_ref, s.documents, s.roles, s.kb_impact].join(' ').toLowerCase();
+  const match = (s) => {
+    if (state.q && !haystack(s).includes(state.q.toLowerCase())) return false;
+    if (state.type && s.change_type !== state.type) return false;
+    if (state.doc && !s.documents_list.includes(state.doc)) return false;
+    if (state.conf && s.confidence !== state.conf) return false;
+    if (state.tier && s.tier !== state.tier) return false;
+    if (state.role && !(s.roles_list.includes(state.role) || s.roles_list.includes('все'))) return false;
+    return true;
+  };
+
+  const confTag = (c) => `<span class="tag ${c === 'high' ? 'ok' : c === 'medium' ? 'warn' : 'danger'}"><span class="dotm"></span>достоверность ${lab('confidence', c)}</span>`;
+  const statusTag = (s) => `<span class="tag ${s === 'in_force' ? 'ok' : s === 'adopted' ? 'warn' : s === 'repealed' ? 'danger' : 'plain'}">${lab('status', s)}</span>`;
+
+  function card(s) {
+    const n = el('article', `card lv-${s.tier || 4}${s.confidence === 'low' ? ' low' : ''}`);
+    const title = s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>` : esc(s.title);
+    n.innerHTML = `
+      <div class="row">
+        <span class="tag info">${esc(lab('change_type', s.change_type))}</span>
+        ${statusTag(s.status)}
+        ${confTag(s.confidence)}
+        <span class="tag plain">${esc(lab('tier', s.tier))}</span>
+      </div>
+      <h3 style="margin-top:var(--s3)">${title}</h3>
+      <p>${esc(s.summary)}</p>
+      <div class="row">${s.documents_list.map((d) => `<span class="tag plain">${esc(d)}</span>`).join('')}</div>
+      <div class="row meta">
+        <span><b>${esc(s.id)}</b></span>
+        <span>источник: ${esc(s.source || '—')}</span>
+        <span>в силе с: ${ru(s.effective_date)}</span>
+        ${s.norm_ref ? `<span>норма: ${esc(s.norm_ref)}</span>` : ''}
+        <span>обновлено: ${ru(s.last_updated)}</span>
+        ${s.kb_impact ? `<span>база знаний: ${esc(s.kb_impact)}</span>` : ''}
+        <span>роли: ${esc(s.roles_list.join(', ') || '—')}</span>
+      </div>`;
+    return n;
+  }
+
+  let shown = [];
+  function render() {
+    shown = D.signals.filter(match);
+    const box = $('#cards');
+    box.textContent = '';
+    shown.forEach((s) => box.append(card(s)));
+    $('#empty').hidden = shown.length > 0;
+    const filtered = Object.values(state).some(Boolean);
+    $('#count').textContent = filtered
+      ? `Показано ${shown.length} из ${D.signals.length} сигналов`
+      : `Всего ${D.signals.length} сигналов, новых в последнем выпуске — ${K.fresh}`;
+    $('#navSignals').textContent = shown.length;
+  }
+
+  /* ------------------------------------------------------------- нормы */
+  let sortKey = 'effective_from', sortDir = 1;
+  const normsBody = $('#normsTbl tbody');
+  function renderNorms() {
+    const rows = D.norms.slice().sort((a, b) => String(a[sortKey] || '').localeCompare(String(b[sortKey] || ''), 'ru') * sortDir);
+    normsBody.textContent = '';
+    rows.forEach((n) => {
+      const tr = el('tr');
+      const unverified = /уточнить/i.test(n.number || '') || /НЕ ПРОВЕРЕНО/i.test(n.notes || '');
+      tr.innerHTML = `
+        <td>${esc(n.type)}</td>
+        <td class="num">${esc(n.number)}${n.date ? `<br><span class="meta">${ru(n.date)}</span>` : ''}</td>
+        <td>${esc(n.title)}${n.notes ? `<br><span class="meta">${esc(n.notes)}</span>` : ''}
+            ${unverified ? '<br><span class="tag danger"><span class="dotm"></span>реквизиты не подтверждены</span>' : ''}</td>
+        <td>${statusTag(n.status)}</td>
+        <td class="num">${ru(n.effective_from)}</td>
+        <td class="num">${ru(n.last_verified)}</td>
+        <td>${n.url ? `<a href="${esc(n.url)}" target="_blank" rel="noopener">открыть</a>` : '—'}</td>`;
+      normsBody.append(tr);
+    });
+    document.querySelectorAll('#normsTbl th[data-k]').forEach((th) => {
+      th.classList.toggle('sorted', th.dataset.k === sortKey);
+      th.classList.toggle('desc', th.dataset.k === sortKey && sortDir < 0);
+    });
+  }
+  document.querySelectorAll('#normsTbl th[data-k]').forEach((th) => th.addEventListener('click', () => {
+    if (sortKey === th.dataset.k) sortDir *= -1; else { sortKey = th.dataset.k; sortDir = 1; }
+    renderNorms();
+  }));
+  renderNorms();
+  $('#navNorms').textContent = D.norms.length;
+  const pend = D.norms.filter((n) => n.status === 'adopted');
+  $('#normsNote').textContent = pend.length
+    ? `Принято, но не вступило в силу: ${pend.map((n) => n.number).join(', ')}. Статусы перепроверяются в недельном прогоне.`
+    : 'Все нормы реестра проверены в последнем прогоне.';
+
+  /* ------------------------------------------------------------- расхождения */
+  function renderFlags() {
+    const showClosed = $('#showClosed').checked;
+    const list = D.flags.filter((f) => showClosed || f.open);
+    const box = $('#flags');
+    box.textContent = '';
+    if (!list.length) {
+      box.append(el('div', 'empty', '<b>Открытых расхождений нет.</b><span>База знаний согласована с реестром норм.</span>'));
+    }
+    list.forEach((f) => {
+      const n = el('article', `flag ${f.open ? esc(f.severity) : 'done'}`);
+      n.innerHTML = `
+        <div class="row">
+          <h3>${esc(f.flag_id)}</h3>
+          <span class="tag ${f.open ? (f.severity === 'high' ? 'danger' : 'warn') : 'ok'}">${f.open ? 'открыто' : 'закрыто'}</span>
+          <span class="tag plain">серьёзность ${esc(lab('severity', f.severity))}</span>
+        </div>
+        <p>${esc(f.issue)}</p>
+        <div class="row meta">
+          <span>страница: <b>${esc(f.kb_page)}</b></span>
+          <span>сигнал: ${esc(f.signal_id || '—')}</span>
+          <span>создано: ${ru(f.created)}</span>
+          <span>статус: ${esc(f.status)}</span>
+        </div>`;
+      box.append(n);
+    });
+  }
+  $('#showClosed').addEventListener('change', renderFlags);
+  renderFlags();
+  $('#navFlags').textContent = D.flags.filter((f) => f.open).length;
+
+  /* ------------------------------------------------------------- архив */
+  const archList = $('#archList'), archBody = $('#archBody');
+  function openNote(i) {
+    archBody.innerHTML = notes[i].html;
+    [...archList.children].forEach((b, j) => b.classList.toggle('on', j === i));
+  }
+  notes.forEach((n, i) => {
+    const b = el('button', '', `${n.kind === 'weekly' ? 'Дайджест' : 'Выпуск'}<i>${ru(n.date)}</i>`);
+    b.type = 'button';
+    b.addEventListener('click', () => openNote(i));
+    archList.append(b);
+  });
+  if (notes.length) openNote(0); else archBody.innerHTML = '<p class="muted">Выпусков пока нет.</p>';
+  $('#navNotes').textContent = notes.length;
+
+  /* ------------------------------------------------------------- выгрузка */
+  const dl = (name, text, type) => {
+    const a = el('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: type + ';charset=utf-8' }));
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+  const activeFilters = () => {
+    const parts = [];
+    if (state.q) parts.push(`поиск «${state.q}»`);
+    if (state.type) parts.push('тип: ' + lab('change_type', state.type));
+    if (state.doc) parts.push('документ: ' + state.doc);
+    if (state.conf) parts.push('достоверность: ' + lab('confidence', state.conf));
+    if (state.tier) parts.push(lab('tier', state.tier));
+    if (state.role) parts.push('роль: ' + state.role);
+    return parts.length ? parts.join('; ') : 'без фильтров';
+  };
+  $('#expCsv').addEventListener('click', () => {
+    const cols = ['id', 'last_updated', 'tier', 'source', 'title', 'url', 'change_type', 'documents', 'roles', 'effective_date', 'status', 'norm_ref', 'kb_impact', 'confidence', 'summary'];
+    const q = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+    const csv = '\uFEFF' + [cols.join(','), ...shown.map((s) => cols.map((c) => q(s[c])).join(','))].join('\r\n');
+    dl(`epd-monitor-${D.as_of}.csv`, csv, 'text/csv');
+  });
+  $('#expMd').addEventListener('click', () => {
+    const lines = [
+      `# Монитор ЭПД — выборка сигналов`, '',
+      `- Дата актуальности: ${ru(D.as_of)}`,
+      `- Фильтры: ${activeFilters()}`,
+      `- Сигналов в выборке: ${shown.length} из ${D.signals.length}`, '',
+      '| ID | Тип | Документы | Статус | В силе | Достоверность | Сигнал |', '|---|---|---|---|---|---|---|',
+      ...shown.map((s) => `| ${s.id} | ${lab('change_type', s.change_type)} | ${s.documents} | ${lab('status', s.status)} | ${ru(s.effective_date)} | ${lab('confidence', s.confidence)} | [${s.title.replace(/\|/g, '/')}](${s.url}) |`),
+      '', '## Подробно', '',
+      ...shown.flatMap((s) => [`### ${s.id} — ${s.title}`, '', s.summary, '',
+        `Источник: ${s.source} · ${s.url}`, `Роли: ${s.roles} · норма: ${s.norm_ref || '—'} · достоверность: ${lab('confidence', s.confidence)}`, '']),
+      '## Важно', '',
+      'Сигналы с достоверностью «средняя» и «низкая» не подтверждены первоисточником.',
+      'Для окончательного решения рекомендуем проверить договорную схему и актуальную редакцию нормативных актов с юристом или профильным специалистом.', '',
+    ];
+    dl(`epd-monitor-${D.as_of}.md`, lines.join('\n'), 'text/markdown');
+  });
+
+  /* ------------------------------------------------------------- навигация */
+  const links = [...document.querySelectorAll('#nav a')];
+  const secs = links.map((a) => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const scroller = window.matchMedia('(max-width: 1020px)').matches ? null : $('#main');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) links.forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id));
+    });
+  }, { root: scroller, rootMargin: '-15% 0px -70% 0px' });
+  secs.forEach((s) => io.observe(s));
+
+  render();
+
+  /* ------------------------------------------------------------- дата данных в шапке */
+  $('#asof').textContent = 'актуально на ' + ru(D.as_of);
+  $('#builtAt').textContent = 'Данные загружены из data.json, сборка ' + D.generated_at;
+};
+</script>
+<script>
+(async () => {
+  const show = (id, on) => { const n = document.getElementById(id); if (n) n.hidden = !on; };
+  try {
+    const res = await fetch('data.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' при запросе data.json');
+    const data = await res.json();
+    window.renderMonitor(data);
+    show('loading', false);
+    show('app', true);
+  } catch (e) {
+    show('loading', false);
+    show('loadError', true);
+    document.getElementById('loadErrorMsg').textContent = String(e && e.message ? e.message : e);
+    document.getElementById('asof').textContent = 'данные недоступны';
+  }
+})();
+</script>
+</body>
+</html>
