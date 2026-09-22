@@ -746,7 +746,8 @@ select, input[type="search"] {
 (async () => {
   const show = (id, on) => { const n = document.getElementById(id); if (n) n.hidden = !on; };
   try {
-    const res = await fetch('data.json', { cache: 'no-store' });
+    /* уникальный параметр обходит кеш CDN (GitHub Pages отдаёт max-age=600) */
+    const res = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status + ' при запросе data.json');
     const data = await res.json();
     window.renderMonitor(data);
